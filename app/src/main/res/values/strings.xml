@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">realm_template</string>
+    <string name="app_name">Realm File Viewer</string>
+    <string name="please_connect_from_pc">connect adb and open \'chrome://inspect\' from Google Chrome on your PC.</string>
 </resources>

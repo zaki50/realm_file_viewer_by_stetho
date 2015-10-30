@@ -1,35 +1,25 @@
-package com.example.realm_template;
+package com.example.realm_file_viewer;
 
 import android.app.Application;
-import android.support.annotation.VisibleForTesting;
 
-import com.example.realm_template.prngfix.PRNGFixes;
-import com.squareup.leakcanary.LeakCanary;
-import com.squareup.leakcanary.RefWatcher;
+import com.example.realm_file_viewer.prngfix.PRNGFixes;
+import com.facebook.stetho.Stetho;
+import com.uphyca.stetho_realm.RealmInspectorModulesProvider;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class MyApplication extends Application {
     private static MyApplication self;
 
     public static MyApplication getInstance() {
         return self;
-    }
-
-    @VisibleForTesting
-    public ApplicationComponent component;
-    private RefWatcher refWatcher;
-
-    public ApplicationComponent getComponent() {
-        return component;
-    }
-
-    public RefWatcher getRefWatcher() {
-        return refWatcher;
     }
 
     @Override
@@ -39,22 +29,29 @@ public class MyApplication extends Application {
 
         PRNGFixes.apply();
 
-        component = DaggerApplicationComponent.create();
-        refWatcher = LeakCanary.install(this);
-
-        // assetにもっているデータを展開
         removeAllRealmFiles();
-        for (String filename : getRealmFileList()) {
-            copyToFilesDir(filename);
+        // copy files from assets folder to /data/data/<applicationId>/files/
+        for (String realmFilename : getRealmFileList()) {
+            copyToFilesDir(realmFilename);
         }
+
+        initStetho();
     }
 
-    private String[] getRealmFileList() {
+    private List<String> getRealmFileList() {
         try {
-            return getAssets().list("");
+            final String[] fileList = getAssets().list("");
+            final ArrayList<String> realmFileList = new ArrayList<>();
+
+            for (String file : fileList) {
+                if (file.endsWith(".realm")) {
+                    realmFileList.add(file);
+                }
+            }
+            return realmFileList;
         } catch (IOException e) {
             e.printStackTrace();
-            return new String[0];
+            return Collections.emptyList();
         }
     }
 
@@ -85,4 +82,15 @@ public class MyApplication extends Application {
         }
     }
 
+    private void initStetho() {
+        Stetho.initialize(
+                Stetho.newInitializerBuilder(this)
+                        .enableDumpapp(Stetho.defaultDumperPluginsProvider(this))
+                        .enableWebKitInspector(RealmInspectorModulesProvider.builder(this)
+                                .withMetaTables()
+                                .withDescendingOrder()
+                                .withLimit(1000)
+                                .build())
+                        .build());
+    }
 }

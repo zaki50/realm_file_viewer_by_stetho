@@ -1,4 +1,4 @@
-package com.example.realm_template.prngfix;
+package com.example.realm_file_viewer.prngfix;
 
 /*
  * This software is provided 'as-is', without any express or implied
